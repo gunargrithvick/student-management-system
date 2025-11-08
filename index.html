@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Student Management</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Student Management System</h1>
+
+  <nav>
+    <div class="dropdown">
+      <button class="dropbtn">Insert</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="showSection('insert', 'insert-student')">Student</a>
+        <a href="#" onclick="showSection('insert', 'insert-course')">Course</a>
+        <a href="#" onclick="showSection('insert', 'insert-attendance')">Attendance</a>
+        <a href="#" onclick="showSection('insert', 'insert-marks')">Marks</a>
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <button class="dropbtn">Update</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="showSection('update', 'update-student')">Student</a>
+        <a href="#" onclick="showSection('update', 'update-course')">Course</a>
+        <a href="#" onclick="showSection('update', 'update-attendance')">Attendance</a>
+        <a href="#" onclick="showSection('update', 'update-marks')">Marks</a>
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <button class="dropbtn">Delete</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="showSection('delete', 'delete-student')">Student</a>
+        <a href="#" onclick="showSection('delete', 'delete-course')">Course</a>
+        <a href="#" onclick="showSection('delete', 'delete-attendance')">Attendance</a>
+        <a href="#" onclick="showSection('delete', 'delete-marks')">Marks</a>
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <button class="dropbtn">Retrieve</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="showSection('retrieve', 'retrieve-student')">Student</a>
+        <a href="#" onclick="showSection('retrieve', 'retrieve-course')">Course</a>
+        <a href="#" onclick="showSection('retrieve', 'retrieve-attendance')">Attendance</a>
+        <a href="#" onclick="showSection('retrieve', 'retrieve-marks')">Marks</a>
+      </div>
+    </div>
+  </nav>
+
+  <div id="insert" class="section">
+    <h2>Insert</h2>
+
+    <div id="insert-student">
+      <h3>Insert Student</h3>
+      <form id="insertStudentForm">
+        <input type="text" id="iStudentID" placeholder="Student ID" required />
+        <input type="text" id="iName" placeholder="Name" required />
+        <input type="date" id="iDOB" placeholder="DOB" required />
+        <input type="text" id="iGender" placeholder="Gender" required />
+        <input type="email" id="iEmail" placeholder="Email" required />
+        <input type="text" id="iPhone" placeholder="Phone" required />
+        <button type="submit">Insert Student</button>
+      </form>
+    </div>
+
+    <div id="insert-course">
+      <h3>Insert Course</h3>
+      <form id="insertCourseForm">
+        <input type="number" id="iCourseID" placeholder="Course ID" required />
+        <input type="text" id="iCourseName" placeholder="Course Name" required />
+        <input type="number" id="iCredits" placeholder="Credits" required />
+        <button type="submit">Insert Course</button>
+      </form>
+    </div>
+
+    <div id="insert-attendance">
+      <h3>Insert Attendance</h3>
+      <form id="insertAttendanceForm">
+        <input type="number" id="iAttendanceID" placeholder="Attendance ID" required />
+        <input type="text" id="iAStudentID" placeholder="Student ID" required />
+        <input type="number" id="iACourseID" placeholder="Course ID" required />
+        <input type="date" id="iEnrolmentDate" placeholder="Enrolment Date" required />
+        <button type="submit">Insert Attendance</button>
+      </form>
+    </div>
+
+    <div id="insert-marks">
+      <h3>Insert Marks</h3>
+      <form id="insertMarksForm">
+        <input type="number" id="iMarksID" placeholder="Marks ID" required />
+        <input type="text" id="iMStudentID" placeholder="Student ID" required />
+        <input type="text" id="iExamType" placeholder="Exam Type" required />
+        <input type="number" step="0.01" id="iScore" placeholder="Score" required />
+        <button type="submit">Insert Marks</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="update" class="section" style="display:none;">
+    <h2>Update</h2>
+
+    <div id="update-student">
+      <h3>Update Student</h3>
+      <form id="updateStudentForm">
+        <input type="text" id="uStudentID" placeholder="Student ID" required />
+        <input type="text" id="uName" placeholder="Name" required />
+        <input type="date" id="uDOB" placeholder="DOB" required />
+        <input type="text" id="uGender" placeholder="Gender" required />
+        <input type="email" id="uEmail" placeholder="Email" required />
+        <input type="text" id="uPhone" placeholder="Phone" required />
+        <button type="submit">Update Student</button>
+      </form>
+    </div>
+
+    <div id="update-course">
+      <h3>Update Course</h3>
+      <form id="updateCourseForm">
+        <input type="number" id="uCourseID" placeholder="Course ID" required />
+        <input type="text" id="uCourseName" placeholder="Course Name" required />
+        <input type="number" id="uCredits" placeholder="Credits" required />
+        <button type="submit">Update Course</button>
+      </form>
+    </div>
+
+    <div id="update-attendance">
+      <h3>Update Attendance</h3>
+      <form id="updateAttendanceForm">
+        <input type="number" id="uAttendanceID" placeholder="Attendance ID" required />
+        <input type="text" id="uAStudentID" placeholder="Student ID" required />
+        <input type="number" id="uACourseID" placeholder="Course ID" required />
+        <input type="date" id="uEnrolmentDate" placeholder="Enrolment Date" required />
+        <button type="submit">Update Attendance</button>
+      </form>
+    </div>
+
+    <div id="update-marks">
+      <h3>Update Marks</h3>
+      <form id="updateMarksForm">
+        <input type="number" id="uMarksID" placeholder="Marks ID" required />
+        <input type="text" id="uMStudentID" placeholder="Student ID" required />
+        <input type="text" id="uExamType" placeholder="Exam Type" required />
+        <input type="number" step="0.01" id="uScore" placeholder="Score" required />
+        <button type="submit">Update Marks</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="delete" class="section" style="display:none;">
+    <h2>Delete</h2>
+
+    <div id="delete-student">
+      <h3>Delete Student</h3>
+      <input type="text" id="dStudentID" placeholder="Student ID" />
+      <button>Delete Student</button>
+    </div>
+
+    <div id="delete-course">
+      <h3>Delete Course</h3>
+      <input type="number" id="dCourseID" placeholder="Course ID" />
+      <button>Delete Course</button>
+    </div>
+
+    <div id="delete-attendance">
+      <h3>Delete Attendance</h3>
+      <input type="number" id="dAttendanceID" placeholder="Attendance ID" />
+      <button>Delete Attendance</button>
+    </div>
+
+    <div id="delete-marks">
+      <h3>Delete Marks</h3>
+      <input type="number" id="dMarksID" placeholder="Marks ID" />
+      <button>Delete Marks</button>
+    </div>
+  </div>
+
+  <div id="retrieve" class="section" style="display:none;">
+    <h2>Retrieve</h2>
+
+    <div id="retrieve-student">
+      <h3>Retrieve Students</h3>
+      <button>Show Students</button>
+      <pre id="retrieveStudentResult"></pre>
+    </div>
+
+    <div id="retrieve-course">
+      <h3>Retrieve Courses</h3>
+      <button>Show Courses</button>
+      <pre id="retrieveCourseResult"></pre>
+    </div>
+
+    <div id="retrieve-attendance">
+      <h3>Retrieve Attendance</h3>
+      <button>Show Attendance</button>
+      <pre id="retrieveAttendanceResult"></pre>
+    </div>
+
+    <div id="retrieve-marks">
+      <h3>Retrieve Marks</h3>
+      <button>Show Marks</button>
+      <pre id="retrieveMarksResult"></pre>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
