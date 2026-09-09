@@ -1,0 +1,46 @@
+# Local dev/prod parity: app + MySQL with one command.
+#   docker compose up --build
+# Then initialise the schema and admin user once:
+#   docker compose exec app npm run init-db   (add -- --seed for demo data)
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-student_management}
+      MYSQL_USER: ${DB_USER:-student_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-change-me}
+    ports:
+      - '3306:3306'
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD:-rootpass}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-student_app}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      DB_NAME: ${DB_NAME:-student_management}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in your environment or .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-this-before-deploying}
+    ports:
+      - '3000:3000'
+
+volumes:
+  db_data:

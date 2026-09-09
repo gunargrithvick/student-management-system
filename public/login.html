@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log in — Student Management</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="login-body">
+    <main class="login-card">
+      <h1>Student Management</h1>
+      <p class="login-sub">Please sign in to continue.</p>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">Log in</button>
+        <p id="loginError" class="form-error" role="alert"></p>
+      </form>
+    </main>
+    <script src="login.js"></script>
+  </body>
+</html>
