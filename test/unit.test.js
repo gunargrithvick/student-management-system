@@ -136,6 +136,13 @@ test('JWT sign/verify carries the role claim', () => {
   assert.equal(decoded.role, 'admin');
 });
 
+test('config derives sessionTtlMs from SESSION_TTL (cookie/JWT stay in sync)', () => {
+  const config = require('../src/config');
+  // Default is 8h; the cookie maxAge and JWT expiry both read this one value.
+  assert.equal(config.sessionTtl, '8h');
+  assert.equal(config.sessionTtlMs, 8 * 60 * 60 * 1000);
+});
+
 test('DB error codes map to friendly HTTP errors', () => {
   const dup = translateDbError({ code: 'ER_DUP_ENTRY' });
   assert.ok(dup instanceof HttpError);

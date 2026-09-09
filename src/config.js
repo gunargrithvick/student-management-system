@@ -27,6 +27,21 @@ if (isProd && JWT_SECRET.length < 32) {
   throw new Error('JWT_SECRET must be at least 32 characters in production');
 }
 
+// Parse a session-TTL string like '8h', '30m', '7d', or a bare number of
+// seconds into milliseconds. The JWT expiry and the cookie maxAge are both
+// derived from this one value so they can never drift apart.
+function parseTtlMs(raw) {
+  const s = String(raw).trim();
+  const m = /^(\d+)\s*(ms|s|m|h|d)?$/.exec(s);
+  if (!m) throw new Error(`Invalid SESSION_TTL: ${raw}`);
+  const n = Number(m[1]);
+  const unit = { ms: 1, s: 1e3, m: 6e4, h: 36e5, d: 864e5 }[m[2] || 's'];
+  return n * unit;
+}
+
+const SESSION_TTL = process.env.SESSION_TTL || '8h';
+const SESSION_TTL_MS = parseTtlMs(SESSION_TTL);
+
 const config = {
   nodeEnv: NODE_ENV,
   isProd,
@@ -42,7 +57,8 @@ const config = {
   },
 
   jwtSecret: JWT_SECRET,
-  sessionTtl: process.env.SESSION_TTL || '8h',
+  sessionTtl: SESSION_TTL,
+  sessionTtlMs: SESSION_TTL_MS,
 
   admin: {
     username: process.env.ADMIN_USERNAME || 'admin',

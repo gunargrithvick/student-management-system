@@ -48,7 +48,8 @@ function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: 'strict',
     secure: config.isProd, // HTTPS-only in production
-    maxAge: 8 * 60 * 60 * 1000,
+    // Same lifetime as the JWT so the cookie and token expire together.
+    maxAge: config.sessionTtlMs,
   });
 }
 
