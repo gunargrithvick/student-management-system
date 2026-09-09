@@ -78,14 +78,13 @@ const loginLimiter = rateLimit({
   message: { message: 'Too many login attempts. Please wait 15 minutes and try again.' },
 });
 
-// Skip rate limiting under test so repeated requests don't trip the limiter
-// and make the suite flaky.
-if (!isTest) app.use('/api', apiLimiter);
-
 // ---------------------------------------------------------------------------
-// Health check (no auth) -- used by hosts for readiness probes.
+// Health check (no auth) -- used by hosts for readiness probes. Registered
+// BEFORE the rate limiter: a platform may probe this every few seconds, and
+// those probes must not eat the per-IP API budget and start returning 429s
+// (which would make the host think the app is down).
 // ---------------------------------------------------------------------------
-app.get('/api/health', async (req, res, next) => {
+app.get('/api/health', async (req, res) => {
   try {
     await query('SELECT 1');
     res.json({ status: 'ok', db: 'up' });
@@ -93,6 +92,10 @@ app.get('/api/health', async (req, res, next) => {
     res.status(503).json({ status: 'degraded', db: 'down' });
   }
 });
+
+// Skip rate limiting under test so repeated requests don't trip the limiter
+// and make the suite flaky.
+if (!isTest) app.use('/api', apiLimiter);
 
 // ---------------------------------------------------------------------------
 // Auth routes

@@ -57,6 +57,15 @@ test('an expired/garbage token is rejected', async () => {
   assert.match(res.body.message, /log in again/i);
 });
 
+test('health check is reachable without auth', async () => {
+  // No DB in tests, so it reports degraded (503) rather than ok -- the point is
+  // it answers JSON and is not gated by auth (would be 401) or rate limiting.
+  const res = await request(app).get('/api/health');
+  assert.equal(res.type, 'application/json');
+  assert.ok(res.status === 200 || res.status === 503, `unexpected status ${res.status}`);
+  assert.ok('status' in res.body);
+});
+
 test('security headers are set by helmet', async () => {
   const res = await request(app).get('/');
   assert.ok(res.headers['x-content-type-options'], 'expected X-Content-Type-Options');
