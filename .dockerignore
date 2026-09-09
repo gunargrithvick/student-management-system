@@ -1,7 +1,13 @@
 node_modules
 npm-debug.log
 .env
+.env.example
 .git
 .gitignore
+.gitattributes
+.github
+.dockerignore
 README.md
 coverage
+test
+.prettierrc
