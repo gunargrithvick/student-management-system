@@ -8,7 +8,7 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 
 const config = require('./src/config');
-const { query } = require('./src/db');
+const { query, pool } = require('./src/db');
 const { RESOURCES, loginSchema, createUserSchema } = require('./src/resources');
 const { HttpError, asyncHandler, translateDbError } = require('./src/errors');
 const auth = require('./src/auth');
@@ -325,15 +325,40 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use((err, req, res, next) => {
   const e = translateDbError(err);
   if (e instanceof HttpError) return res.status(e.status).json({ message: e.message });
+
+  // Body-parser errors (malformed JSON, payload too large) carry their own
+  // status -- they're client mistakes (4xx), not server faults, so don't log
+  // them as 500s.
+  if (e.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Request body is too large.' });
+  }
+  if (e.status === 400 || e instanceof SyntaxError) {
+    return res.status(400).json({ message: 'Malformed request body.' });
+  }
+
   console.error(err);
   res.status(500).json({ message: 'Internal server error.' });
 });
 
 // Only listen when run directly; tests import `app` without binding a port.
 if (require.main === module) {
-  app.listen(config.port, () => {
+  const server = app.listen(config.port, () => {
     console.log(`Server running on http://localhost:${config.port} (${config.nodeEnv})`);
   });
+
+  // Graceful shutdown: hosts (and `docker stop`) send SIGTERM on redeploy.
+  // Stop accepting connections, then close the DB pool so in-flight queries
+  // finish and no connection is left dangling.
+  const shutdown = (signal) => {
+    console.log(`${signal} received, shutting down ...`);
+    server.close(() => {
+      pool.end().finally(() => process.exit(0));
+    });
+    // Don't hang forever if a connection is stuck.
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = app;

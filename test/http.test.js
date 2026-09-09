@@ -61,3 +61,21 @@ test('security headers are set by helmet', async () => {
   const res = await request(app).get('/');
   assert.ok(res.headers['x-content-type-options'], 'expected X-Content-Type-Options');
 });
+
+test('malformed JSON returns 400, not 500', async () => {
+  const res = await request(app)
+    .post('/api/auth/login')
+    .set('Content-Type', 'application/json')
+    .send('{bad json');
+  assert.equal(res.status, 400);
+  assert.equal(res.type, 'application/json');
+});
+
+test('oversized request body returns 413', async () => {
+  const big = JSON.stringify({ username: 'a'.repeat(200000) });
+  const res = await request(app)
+    .post('/api/auth/login')
+    .set('Content-Type', 'application/json')
+    .send(big);
+  assert.equal(res.status, 413);
+});
