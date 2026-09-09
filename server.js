@@ -9,7 +9,7 @@ const rateLimit = require('express-rate-limit');
 
 const config = require('./src/config');
 const { query } = require('./src/db');
-const { RESOURCES, loginSchema } = require('./src/resources');
+const { RESOURCES, loginSchema, createUserSchema } = require('./src/resources');
 const { HttpError, asyncHandler, translateDbError } = require('./src/errors');
 const auth = require('./src/auth');
 
@@ -20,7 +20,8 @@ const app = express();
 if (config.isProd) app.set('trust proxy', 1);
 
 app.use(helmet());
-app.use(morgan(config.isProd ? 'combined' : 'dev'));
+// Skip request logging under test so the test runner's output stays readable.
+if (config.nodeEnv !== 'test') app.use(morgan(config.isProd ? 'combined' : 'dev'));
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 
@@ -59,6 +60,8 @@ function parseId(def, raw) {
 // ---------------------------------------------------------------------------
 // Rate limiting
 // ---------------------------------------------------------------------------
+const isTest = config.nodeEnv === 'test';
+
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 300,
@@ -75,7 +78,9 @@ const loginLimiter = rateLimit({
   message: { message: 'Too many login attempts. Please wait 15 minutes and try again.' },
 });
 
-app.use('/api', apiLimiter);
+// Skip rate limiting under test so repeated requests don't trip the limiter
+// and make the suite flaky.
+if (!isTest) app.use('/api', apiLimiter);
 
 // ---------------------------------------------------------------------------
 // Health check (no auth) -- used by hosts for readiness probes.
@@ -94,16 +99,14 @@ app.get('/api/health', async (req, res, next) => {
 // ---------------------------------------------------------------------------
 app.post(
   '/api/auth/login',
-  loginLimiter,
+  isTest ? (req, res, next) => next() : loginLimiter,
   asyncHandler(async (req, res) => {
     const { username, password } = validate(loginSchema, req.body);
     const rows = await query('SELECT * FROM users WHERE Username = ?', [username]);
     const user = rows[0];
     // Compare even when the user is absent to avoid leaking which usernames
     // exist via response timing.
-    const ok = user
-      ? await auth.verifyPassword(password, user.Password_Hash)
-      : await auth.verifyPassword(password, '$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinv');
+    const ok = await auth.verifyPassword(password, user ? user.Password_Hash : auth.DUMMY_HASH);
     if (!user || !ok) throw new HttpError(401, 'Invalid username or password.');
 
     const token = auth.signToken(user);
@@ -139,9 +142,7 @@ app.post(
   auth.requireAuth,
   auth.requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const { username, password } = validate(loginSchema, req.body);
-    const role = ['admin', 'staff', 'viewer'].includes(req.body.role) ? req.body.role : 'viewer';
-    if (password.length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+    const { username, password, role } = validate(createUserSchema, req.body);
     const hash = await auth.hashPassword(password);
     await query('INSERT INTO users (Username, Password_Hash, Role) VALUES (?, ?, ?)', [
       username,
@@ -158,6 +159,7 @@ app.delete(
   auth.requireRole('admin'),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) throw new HttpError(400, 'Invalid user id.');
     if (id === req.user.sub) throw new HttpError(400, 'You cannot delete your own account.');
     const result = await query('DELETE FROM users WHERE User_ID = ?', [id]);
     if (result.affectedRows === 0) throw new HttpError(404, 'User not found.');

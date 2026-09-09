@@ -7,11 +7,19 @@
 
 const { z } = require('zod');
 
-// A strict YYYY-MM-DD date string that also has to parse to a real date.
+// A strict YYYY-MM-DD date string that must also be a real calendar date.
+// Date.parse alone isn't enough: it silently rolls 2003-02-30 over to March,
+// so we round-trip through UTC and require the parts to survive unchanged.
+function isRealDate(s) {
+  const [y, m, d] = s.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
 const dateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be a date in YYYY-MM-DD format')
-  .refine((s) => !Number.isNaN(Date.parse(s)), 'Must be a real calendar date');
+  .refine(isRealDate, 'Must be a real calendar date');
 
 const phone = z
   .string()
@@ -90,10 +98,17 @@ for (const def of Object.values(RESOURCES)) {
   def.updateColumns = def.columns.filter((c) => c !== def.pk);
 }
 
-// Login payload.
+// Login payload. Passwords are only compared here, so no length rule.
 const loginSchema = z.object({
   username: z.string().trim().min(1).max(50),
   password: z.string().min(1).max(200),
 });
 
-module.exports = { RESOURCES, loginSchema };
+// Creating a user enforces a minimum password length and a valid role.
+const createUserSchema = z.object({
+  username: z.string().trim().min(1).max(50),
+  password: z.string().min(8, 'Password must be at least 8 characters.').max(200),
+  role: z.enum(['admin', 'staff', 'viewer']).default('viewer'),
+});
+
+module.exports = { RESOURCES, loginSchema, createUserSchema };

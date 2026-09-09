@@ -18,6 +18,13 @@ const COOKIE_NAME = 'token';
 // Role hierarchy: a higher rank implies every permission of the ranks below.
 const ROLE_RANK = { viewer: 1, staff: 2, admin: 3 };
 
+// A real bcrypt hash (cost 12) that no password will ever match. The login
+// route compares against this when the username is unknown, so a missing user
+// costs the same ~250ms as a wrong password for a real user. It MUST be a valid
+// hash: bcrypt.compare short-circuits to false in ~0ms on a malformed one,
+// which would reintroduce the username-enumeration timing oracle it prevents.
+const DUMMY_HASH = '$2b$12$S.Z2YY.43ny2laSO7VYYAOoggw.FdS/.PODj3mRKRU.H49ArTAVpO';
+
 async function hashPassword(plain) {
   return bcrypt.hash(plain, 12);
 }
@@ -80,6 +87,7 @@ function requireRole(minRole) {
 
 module.exports = {
   COOKIE_NAME,
+  DUMMY_HASH,
   hashPassword,
   verifyPassword,
   signToken,

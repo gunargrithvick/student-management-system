@@ -7,7 +7,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { RESOURCES, loginSchema } = require('../src/resources');
+const { RESOURCES, loginSchema, createUserSchema } = require('../src/resources');
 const auth = require('../src/auth');
 const { translateDbError, HttpError } = require('../src/errors');
 
@@ -35,16 +35,23 @@ test('student schema rejects a bad email and bad gender', () => {
   assert.equal(r.success, false);
 });
 
-test('student schema rejects an impossible date', () => {
-  const r = RESOURCES.students.createSchema.safeParse({
+test('student schema rejects impossible calendar dates', () => {
+  const base = {
     Student_ID: 'S001',
     Name: 'Ada',
-    DOB: '2003-13-40',
     Gender: 'Female',
     Email: 'ada@example.com',
     Phone: '123456',
-  });
-  assert.equal(r.success, false);
+  };
+  const parse = (DOB) => RESOURCES.students.createSchema.safeParse({ ...base, DOB }).success;
+  // Feb 30 / Apr 31 pass a naive regex+Date.parse (which rolls them over into
+  // the next month) but must be rejected as real calendar dates.
+  assert.equal(parse('2003-02-30'), false);
+  assert.equal(parse('2003-04-31'), false);
+  assert.equal(parse('2003-13-40'), false);
+  assert.equal(parse('2003-00-10'), false);
+  assert.equal(parse('2004-02-29'), true); // leap year
+  assert.equal(parse('2003-02-29'), false); // non-leap year
 });
 
 test('course credits are bounded to 1..20', () => {
@@ -90,11 +97,34 @@ test('login schema requires username and password', () => {
   assert.equal(loginSchema.safeParse({ username: '', password: 'b' }).success, false);
 });
 
+test('createUserSchema enforces password length and defaults role to viewer', () => {
+  const short = createUserSchema.safeParse({ username: 'bob', password: 'short' });
+  assert.equal(short.success, false);
+  const ok = createUserSchema.safeParse({ username: 'bob', password: 'longenough' });
+  assert.equal(ok.success, true);
+  assert.equal(ok.data.role, 'viewer');
+  assert.equal(
+    createUserSchema.safeParse({ username: 'b', password: 'longenough', role: 'root' }).success,
+    false,
+  );
+});
+
 test('password hashing round-trips and rejects wrong passwords', async () => {
   const hash = await auth.hashPassword('correct horse');
   assert.notEqual(hash, 'correct horse');
   assert.equal(await auth.verifyPassword('correct horse', hash), true);
   assert.equal(await auth.verifyPassword('wrong', hash), false);
+});
+
+test('DUMMY_HASH is a valid bcrypt hash that never matches (no timing leak)', async () => {
+  // A malformed hash makes bcrypt.compare short-circuit in ~0ms, which would
+  // let an attacker distinguish unknown usernames by response time.
+  assert.match(auth.DUMMY_HASH, /^\$2[aby]\$\d{2}\$.{53}$/);
+  const start = process.hrtime.bigint();
+  const result = await auth.verifyPassword('any password at all', auth.DUMMY_HASH);
+  const ms = Number(process.hrtime.bigint() - start) / 1e6;
+  assert.equal(result, false);
+  assert.ok(ms > 50, `dummy-hash compare took only ${ms.toFixed(1)}ms; expected real bcrypt work`);
 });
 
 test('JWT sign/verify carries the role claim', () => {

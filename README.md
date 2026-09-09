@@ -80,6 +80,14 @@ Required in production: `JWT_SECRET` (≥32 chars), DB credentials, and
 
 `:resource` is one of `students`, `courses`, `attendances`, `marks`.
 
+## Testing
+
+`npm test` runs the suite on Node's built-in runner — no database required.
+It covers validation schemas, password hashing, the login timing-safe dummy
+hash, JWT round-trips, DB-error mapping, and HTTP-level checks (auth gating,
+validation, security headers, JSON 404s) against the real Express app via
+supertest. CI runs the same suite plus a Prettier format check on every push.
+
 ## Scripts
 
 | Command           | Description                                            |

@@ -22,6 +22,9 @@ const pool = mysql.createPool({
   // Return DATE columns as 'YYYY-MM-DD' strings rather than JS Date objects, so
   // the client never has to reverse a timezone shift applied on the way out.
   dateStrings: true,
+  // Return DECIMAL columns (e.g. Score) as JS numbers instead of strings, so
+  // the API serializes 92.5 rather than "92.50".
+  decimalNumbers: true,
 });
 
 /**

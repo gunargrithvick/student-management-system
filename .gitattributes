@@ -1,0 +1,9 @@
+# Normalize line endings to LF in the repo for all text files, so diffs stay
+# clean across Windows/macOS/Linux. Windows working copies still check out CRLF
+# where the OS expects it; the stored blob is always LF.
+* text=auto eol=lf
+
+# Binary/lockfiles: leave untouched.
+*.png binary
+*.jpg binary
+*.ico binary

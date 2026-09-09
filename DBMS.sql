@@ -75,7 +75,9 @@ CREATE TABLE IF NOT EXISTS attendances (
     REFERENCES students (Student_ID) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_attendances_course FOREIGN KEY (Course_ID)
     REFERENCES courses (Course_ID) ON DELETE RESTRICT ON UPDATE CASCADE,
-  -- Stops the same student being marked twice for one class.
+  -- Stops the same student being marked twice for one class. Note: MySQL treats
+  -- NULLs as distinct in a UNIQUE key, so rows with a NULL Class_Date (pure
+  -- enrolments, no class recorded yet) are intentionally not de-duplicated here.
   UNIQUE KEY uq_attendance_slot (Student_ID, Course_ID, Class_Date),
   INDEX idx_attendances_student (Student_ID),
   INDEX idx_attendances_course (Course_ID)
