@@ -90,13 +90,15 @@ supertest. CI runs the same suite plus a Prettier format check on every push.
 
 ## Scripts
 
-| Command           | Description                                            |
-| ----------------- | ------------------------------------------------------ |
-| `npm start`       | Run the server                                         |
-| `npm run dev`     | Run with file watch                                    |
-| `npm run init-db` | Create schema + admin user (`-- --seed` for demo data) |
-| `npm test`        | Run unit tests (no DB required)                        |
-| `npm run format`  | Format with Prettier                                   |
+| Command                | Description                                            |
+| ---------------------- | ------------------------------------------------------ |
+| `npm start`            | Run the server                                         |
+| `npm run dev`          | Run with file watch                                    |
+| `npm run init-db`      | Create schema + admin user (`-- --seed` for demo data) |
+| `npm run seed`         | Create schema + admin user with demo data              |
+| `npm test`             | Run unit tests (no DB required)                        |
+| `npm run format`       | Format with Prettier                                   |
+| `npm run format:check` | Check formatting without writing (used in CI)          |
 
 ## Deploying
 
