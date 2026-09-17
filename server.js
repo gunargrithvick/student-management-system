@@ -57,6 +57,18 @@ function parseId(def, raw) {
   return s;
 }
 
+// Parse pagination values before placing them into the SQL statement. MySQL
+// does not accept decimal, infinite, or non-numeric LIMIT/OFFSET values, and
+// accepting them here would turn a bad request into a database error.
+function parsePageValue(raw, fallback, max, name) {
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new HttpError(400, `${name} must be a positive integer.`);
+  }
+  return Math.min(value, max);
+}
+
 // ---------------------------------------------------------------------------
 // Rate limiting
 // ---------------------------------------------------------------------------
@@ -213,8 +225,8 @@ app.get(
   loadResource,
   asyncHandler(async (req, res) => {
     const def = req.resourceDef;
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const page = parsePageValue(req.query.page, 1, 1_000_000, 'page');
+    const limit = parsePageValue(req.query.limit, 20, 100, 'limit');
     const offset = (page - 1) * limit;
 
     let where = '';

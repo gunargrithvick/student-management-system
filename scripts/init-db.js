@@ -16,21 +16,44 @@ const { hashPassword } = require('../src/auth');
 
 async function main() {
   const seed = process.argv.includes('--seed');
-  const schemaSql = fs.readFileSync(path.join(__dirname, '..', 'DBMS.sql'), 'utf8');
+  const fullSchemaSql = fs.readFileSync(path.join(__dirname, '..', 'DBMS.sql'), 'utf8');
 
-  // Connect without selecting a database -- DBMS.sql creates and selects it.
-  const conn = await mysql.createConnection({
+  // The database may already exist when this script runs as the restricted
+  // application user in Docker. Strip the database-selection statements so
+  // the user only needs privileges on the configured database. If the database
+  // does not exist, the fallback connection below creates it first.
+  const schemaSql = fullSchemaSql.replace(
+    /CREATE DATABASE IF NOT EXISTS\s+`?[^;\s`]+`?[\s\S]*?;\s*USE\s+`?[^;\s`]+`?\s*;/i,
+    '',
+  );
+
+  const quoteIdentifier = (identifier) => `\`${String(identifier).replace(/`/g, '``')}\``;
+  const connectionOptions = {
     host: config.db.host,
     port: config.db.port,
     user: config.db.user,
     password: config.db.password,
     ssl: config.db.ssl,
     multipleStatements: true,
-  });
+  };
+
+  let conn;
+  try {
+    // This is the normal path for Docker and managed MySQL databases where the
+    // database has already been provisioned for the application user.
+    conn = await mysql.createConnection({ ...connectionOptions, database: config.db.database });
+  } catch (err) {
+    if (err.code !== 'ER_BAD_DB_ERROR') throw err;
+
+    // Local development may use a database administrator account and start
+    // with no database created yet.
+    conn = await mysql.createConnection(connectionOptions);
+    await conn.query(`CREATE DATABASE IF NOT EXISTS ${quoteIdentifier(config.db.database)}`);
+    await conn.changeUser({ database: config.db.database });
+  }
 
   console.log('Applying schema from DBMS.sql ...');
   await conn.query(schemaSql);
-  await conn.changeUser({ database: config.db.database });
   console.log('Schema applied.');
 
   // --- Admin user ---

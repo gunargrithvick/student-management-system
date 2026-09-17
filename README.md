@@ -22,6 +22,14 @@ search.
 - **Ops** — `/api/health` readiness endpoint, connection pooling, Docker +
   docker-compose, unit tests.
 
+## Demo
+
+Try the deployed application here: [Student Management System](https://student-details-website-psi.vercel.app)
+
+The demo runs on Vercel with a free Aiven MySQL database. The database may
+take a few seconds to wake after a period of inactivity. Demo credentials are
+kept out of the public repository.
+
 ## Prerequisites
 
 - Node.js 18+
@@ -49,7 +57,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ## Quick start (Docker)
 
 ```bash
-# Provide at least JWT_SECRET and ADMIN_PASSWORD (via a .env file or your shell)
+# Provide DB_ROOT_PASSWORD, DB_PASSWORD, JWT_SECRET, and ADMIN_PASSWORD (via a .env file or your shell)
 docker compose up --build -d
 docker compose exec app npm run init-db     # add: -- --seed  for demo data
 ```
@@ -60,7 +68,12 @@ App on http://localhost:3000, MySQL on `localhost:3306`.
 
 All configuration is via environment variables — see [.env.example](.env.example).
 Required in production: `JWT_SECRET` (≥32 chars), DB credentials, and
-`ADMIN_PASSWORD`. Set `DB_SSL=true` when connecting to a managed MySQL provider.
+`ADMIN_PASSWORD`. Set `DB_SSL=true` when connecting to a managed MySQL provider;
+provide its PEM CA certificate in `DB_SSL_CA` when certificate verification
+needs a provider-specific CA, such as Aiven.
+The TiDB Cloud Vercel integration exposes `TIDB_HOST`, `TIDB_PORT`,
+`TIDB_USER`, `TIDB_PASSWORD`, and `TIDB_DATABASE`; the application accepts
+those names directly and enables TLS for that connection.
 
 ## API overview
 
@@ -104,9 +117,12 @@ supertest. CI runs the same suite plus a Prettier format check on every push.
 
 The frontend is served by Express, so this is a single deployable service.
 Deploy the Node app plus a managed MySQL instance on the same platform
-(Railway, Render, Fly.io all work). Set the environment variables from
-`.env.example`, run `npm run init-db` once against the production database, and
-point the platform's health check at `/api/health`.
+(Railway, Render, Fly.io, and Vercel work). Set the environment variables from
+`.env.example` and point the platform's health check at `/api/health`.
+
+The included `vercel.json` runs the idempotent `npm run init-db` bootstrap during
+a Vercel build, so the schema and initial admin account are created before the
+deployment serves traffic.
 
 ## Tech notes
 

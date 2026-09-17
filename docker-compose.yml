@@ -8,16 +8,16 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in your environment or .env}
       MYSQL_DATABASE: ${DB_NAME:-student_management}
       MYSQL_USER: ${DB_USER:-student_app}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-change-me}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in your environment or .env}
     ports:
       - '3306:3306'
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD:-rootpass}']
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD}']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -34,11 +34,11 @@ services:
       DB_HOST: db
       DB_PORT: 3306
       DB_USER: ${DB_USER:-student_app}
-      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in your environment or .env}
       DB_NAME: ${DB_NAME:-student_management}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in your environment or .env}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-this-before-deploying}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in your environment or .env}
     ports:
       - '3000:3000'
 

@@ -88,3 +88,14 @@ test('oversized request body returns 413', async () => {
     .send(big);
   assert.equal(res.status, 413);
 });
+
+test('invalid pagination values are rejected before the database is queried', async () => {
+  const auth = require('../src/auth');
+  const token = auth.signToken({ User_ID: 7, Username: 'tester', Role: 'viewer' });
+
+  for (const query of ['?page=1.5', '?limit=Infinity', '?limit=0']) {
+    const res = await request(app).get(`/api/students${query}`).set('Cookie', `token=${token}`);
+    assert.equal(res.status, 400, query);
+    assert.match(res.body.message, /positive integer/i);
+  }
+});

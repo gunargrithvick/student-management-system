@@ -14,6 +14,24 @@ function required(name) {
   return value;
 }
 
+function requiredAny(...names) {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value !== undefined && value !== '') return value;
+  }
+  throw new Error(`Missing required environment variable: ${names.join(' or ')}`);
+}
+
+function portValue(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 65535) {
+    throw new Error(`${name} must be a valid TCP port`);
+  }
+  return value;
+}
+
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProd = NODE_ENV === 'production';
 
@@ -41,19 +59,36 @@ function parseTtlMs(raw) {
 
 const SESSION_TTL = process.env.SESSION_TTL || '8h';
 const SESSION_TTL_MS = parseTtlMs(SESSION_TTL);
+const dbPort =
+  process.env.DB_PORT === undefined ? portValue('TIDB_PORT', 3306) : portValue('DB_PORT', 3306);
+const usingTiDbVariables = process.env.TIDB_HOST !== undefined && process.env.DB_HOST === undefined;
 
 const config = {
   nodeEnv: NODE_ENV,
   isProd,
-  port: Number(process.env.PORT) || 3000,
+  port: portValue('PORT', 3000),
 
   db: {
-    host: process.env.DB_HOST || '127.0.0.1',
-    port: Number(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'student_management',
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
+    host: isProd
+      ? requiredAny('DB_HOST', 'TIDB_HOST')
+      : process.env.DB_HOST || process.env.TIDB_HOST || '127.0.0.1',
+    port: dbPort,
+    user: isProd
+      ? requiredAny('DB_USER', 'TIDB_USER')
+      : process.env.DB_USER || process.env.TIDB_USER || 'root',
+    password: isProd
+      ? requiredAny('DB_PASSWORD', 'TIDB_PASSWORD')
+      : process.env.DB_PASSWORD || process.env.TIDB_PASSWORD || '',
+    database: isProd
+      ? requiredAny('DB_NAME', 'TIDB_DATABASE')
+      : process.env.DB_NAME || process.env.TIDB_DATABASE || 'student_management',
+    ssl:
+      process.env.DB_SSL === 'true' || usingTiDbVariables
+        ? {
+            rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+            ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA } : {}),
+          }
+        : undefined,
   },
 
   jwtSecret: JWT_SECRET,
@@ -62,7 +97,7 @@ const config = {
 
   admin: {
     username: process.env.ADMIN_USERNAME || 'admin',
-    password: process.env.ADMIN_PASSWORD || '',
+    password: isProd ? required('ADMIN_PASSWORD') : process.env.ADMIN_PASSWORD || '',
   },
 };
 
